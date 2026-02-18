@@ -83,7 +83,7 @@ DATABASES = {
         'NAME': os.environ.get('POSTGRES_DB', 'ticketdb'),
         'USER': os.environ.get('POSTGRES_USER', 'postgres'),
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'password'),
-        'HOST': 'db', # This matches the service name in docker-compose
+        'HOST': os.environ.get('POSTGRES_HOST', 'db'), # This matches the service name in docker-compose
         'PORT': '5432',
     }
 }

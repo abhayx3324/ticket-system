@@ -1,12 +1,15 @@
-version: '3.8'
-
 services:
   db:
-    image: postgres:15
+    image: postgres
     environment:
       POSTGRES_DB: ticketdb
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -24,7 +27,8 @@ services:
       - POSTGRES_HOST=db
       - LLM_API_KEY=${LLM_API_KEY}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:
