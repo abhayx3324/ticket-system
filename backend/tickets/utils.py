@@ -1,31 +1,32 @@
 """
 LLM utility for ticket classification.
 
-Calls the configured LLM API to suggest a category and priority for a support
-ticket based on its description. The API key is read from the LLM_API_KEY
-environment variable — never hardcoded.
+Uses the Google Gen AI SDK (google-genai) to suggest a category and
+priority for a support ticket based on its description.
 
-Supported models: OpenAI-compatible (gpt-3.5-turbo, gpt-4o, etc.)
+Configuration (environment variables):
+    LLM_API_KEY  — your Google AI Studio / Gemini API key (required)
+    LLM_MODEL    — Gemini model name (default: gemini-2.0-flash-lite)
 
-Failure policy: all exceptions are caught and None is returned so that callers
-can degrade gracefully without blocking ticket submission.
+Failure policy: all exceptions are caught and None is returned so that
+callers can degrade gracefully without blocking ticket submission.
 """
 
 import os
 import json
-import requests
+import enum
 
+from google import genai
+from google.genai import types
+from pydantic import BaseModel, Field
 
-# ---------------------------------------------------------------------------
-# Prompt engineering
-# ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = """You are a support ticket triage assistant.
 Your job is to read a support ticket description and classify it into exactly
 one category and one priority level from the lists below.
 
 Categories:
-  - billing   → payment issues, invoices, charges, subscription, refunds
+  - billing    → payment issues, invoices, charges, subscription, refunds
   - technical  → bugs, errors, crashes, performance, integrations, API issues
   - account    → login, password, access, permissions, profile changes
   - general    → everything else that doesn't fit the above
@@ -44,70 +45,55 @@ Rules:
 
 USER_PROMPT_TEMPLATE = 'Ticket description: """{description}"""'
 
-def classify_ticket(description: str) -> dict | None:
-    """
-    Send *description* to the LLM and return a dict with keys:
-        suggested_category (str)
-        suggested_priority (str)
 
-    Returns None on any error (network failure, bad JSON, missing key, etc.)
-    so the caller can degrade gracefully.
-    """
+class Category(str, enum.Enum):
+    billing  = "billing"
+    technical = "technical"
+    account  = "account"
+    general  = "general"
+
+
+class Priority(str, enum.Enum):
+    low      = "low"
+    medium   = "medium"
+    high     = "high"
+    critical = "critical"
+
+
+class TicketClassification(BaseModel):
+    suggested_category: Category = Field(...)
+    suggested_priority: Priority = Field(...)
+
+
+def classify_ticket(description: str) -> dict | None:
     api_key = os.environ.get("LLM_API_KEY")
     if not api_key:
         print("[classify_ticket] LLM_API_KEY is not set — skipping classification.")
         return None
 
-    url = "https://api.openai.com/v1/chat/completions"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
-
-    payload = {
-        "model": os.environ.get("LLM_MODEL", "gpt-3.5-turbo"),
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": USER_PROMPT_TEMPLATE.format(description=description)},
-        ],
-        "temperature": 0.2,   # low temperature → deterministic, consistent output
-        "max_tokens": 60,     # response is always a tiny JSON object
-    }
+    model_name = os.environ.get("LLM_MODEL", "gemini-3.5-flash")
 
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        raw_content = data["choices"][0]["message"]["content"].strip()
+        client = genai.Client(api_key=api_key)
 
-        # Strip accidental markdown code fences if the model wraps the JSON
-        if raw_content.startswith("```"):
-            raw_content = raw_content.split("```")[1]
-            if raw_content.startswith("json"):
-                raw_content = raw_content[4:]
-            raw_content = raw_content.strip()
+        response = client.models.generate_content(
+            model = model_name,
+            contents = USER_PROMPT_TEMPLATE.format(description=description),
+            config = {
+                "system_instruction": SYSTEM_PROMPT,
+                "response_mime_type": "application/json",
+                "response_schema": TicketClassification,
+                "temperature": 0.2
+            }
+        )
 
-        result = json.loads(raw_content)
+        result = json.loads(response.text)
 
-        # Validate the expected keys are present
-        if "suggested_category" not in result or "suggested_priority" not in result:
-            print(f"[classify_ticket] LLM response missing required keys: {result}")
-            return None
+        return result
 
-        return {
-            "suggested_category": str(result["suggested_category"]).lower(),
-            "suggested_priority": str(result["suggested_priority"]).lower(),
-        }
-
-    except requests.exceptions.Timeout:
-        print("[classify_ticket] LLM API request timed out.")
-    except requests.exceptions.HTTPError as e:
-        print(f"[classify_ticket] LLM API HTTP error: {e.response.status_code} — {e.response.text[:200]}")
-    except requests.exceptions.RequestException as e:
-        print(f"[classify_ticket] LLM network error: {e}")
-    except (json.JSONDecodeError, KeyError, IndexError) as e:
-        print(f"[classify_ticket] Failed to parse LLM response: {e}")
+    except json.JSONDecodeError as e:
+        print(f"[classify_ticket] Failed to parse Gemini JSON response: {e}")
     except Exception as e:
-        print(f"[classify_ticket] Unexpected error: {e}")
+        print(f"[classify_ticket] Gemini error ({type(e).__name__}): {e}")
 
     return None
