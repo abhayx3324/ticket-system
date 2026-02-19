@@ -2,10 +2,14 @@ from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Min, Max
+from django.utils import timezone
+from datetime import timedelta
+from decimal import Decimal, ROUND_HALF_UP
 from .models import Ticket
 from .serializers import TicketSerializer
 from .utils import classify_ticket
+
 
 class TicketViewSet(viewsets.ModelViewSet):
     queryset = Ticket.objects.all().order_by('-created_at')
@@ -30,38 +34,93 @@ class TicketViewSet(viewsets.ModelViewSet):
             )
         return queryset
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
+
+
 class TicketStatsView(APIView):
     def get(self, request):
-        total_tickets = Ticket.objects.count()
-        open_tickets = Ticket.objects.filter(status='open').count()
-        
-        priority_data = Ticket.objects.values('priority').annotate(count=Count('id'))
-        category_data = Ticket.objects.values('category').annotate(count=Count('id'))
+        agg = Ticket.objects.aggregate(
+            total_tickets=Count('id'),
+            open_tickets=Count('id', filter=Q(status='open')),
+            first_ticket_date=Min('created_at'),
+            last_ticket_date=Max('created_at'),
+        )
 
-        priority_breakdown = {item['priority']: item['count'] for item in priority_data}
-        category_breakdown = {item['category']: item['count'] for item in category_data}
+        total_tickets = agg['total_tickets']
+        open_tickets = agg['open_tickets']
 
-        for p, _ in Ticket.PRIORITY_CHOICES:
-            priority_breakdown.setdefault(p, 0)
-        for c, _ in Ticket.CATEGORY_CHOICES:
-            category_breakdown.setdefault(c, 0)
+        avg_tickets_per_day = 0.0
+        if total_tickets > 0 and agg['first_ticket_date'] and agg['last_ticket_date']:
+            first_date = agg['first_ticket_date'].date()
+            last_date = agg['last_ticket_date'].date()
+            days_span = max((last_date - first_date).days + 1, 1)
+            avg_tickets_per_day = round(total_tickets / days_span, 1)
+
+        priority_rows = (
+            Ticket.objects
+            .values('priority')
+            .annotate(count=Count('id'))
+        )
+        priority_breakdown = {p[0]: 0 for p in Ticket.PRIORITY_CHOICES}
+        for row in priority_rows:
+            priority_breakdown[row['priority']] = row['count']
+
+        category_rows = (
+            Ticket.objects
+            .values('category')
+            .annotate(count=Count('id'))
+        )
+        category_breakdown = {c[0]: 0 for c in Ticket.CATEGORY_CHOICES}
+        for row in category_rows:
+            category_breakdown[row['category']] = row['count']
 
         return Response({
             "total_tickets": total_tickets,
             "open_tickets": open_tickets,
+            "avg_tickets_per_day": avg_tickets_per_day,
             "priority_breakdown": priority_breakdown,
-            "category_breakdown": category_breakdown
+            "category_breakdown": category_breakdown,
         })
+
 
 class ClassifyTicketView(APIView):
     def post(self, request):
-        description = request.data.get('description', '')
+        description = request.data.get('description', '').strip()
         if not description:
-            return Response({"error": "Description required"}, status=400)
-            
+            return Response(
+                {"error": "A non-empty 'description' field is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         suggestion = classify_ticket(description)
-        
+
         if not suggestion:
-            return Response({"suggested_category": "", "suggested_priority": ""})
-            
-        return Response(suggestion)
+            return Response({
+                "suggested_category": "",
+                "suggested_priority": "",
+            })
+
+        valid_categories = [c[0] for c in Ticket.CATEGORY_CHOICES]
+        valid_priorities = [p[0] for p in Ticket.PRIORITY_CHOICES]
+
+        suggested_category = suggestion.get('suggested_category', '')
+        suggested_priority = suggestion.get('suggested_priority', '')
+
+        if suggested_category not in valid_categories:
+            suggested_category = ''
+        if suggested_priority not in valid_priorities:
+            suggested_priority = ''
+
+        return Response({
+            "suggested_category": suggested_category,
+            "suggested_priority": suggested_priority,
+        })
