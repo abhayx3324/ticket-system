@@ -30,7 +30,7 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_HOST=db
       - LLM_API_KEY=${LLM_API_KEY}
-      - LLM_MODEL=${LLM_MODEL:-gemini-2.5-flash-lite}
+      - LLM_MODEL=${LLM_MODEL:-gemini-3.5-flash}
     depends_on:
       db:
         condition: service_healthy
