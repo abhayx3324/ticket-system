@@ -30,6 +30,7 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_HOST=db
       - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_MODEL=${LLM_MODEL:-gpt-3.5-turbo}
     depends_on:
       db:
         condition: service_healthy
