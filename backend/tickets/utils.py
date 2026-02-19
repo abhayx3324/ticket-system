@@ -38,7 +38,7 @@ Priority levels:
   - critical  → complete outage, data loss, security breach, urgent emergency
 
 Rules:
-  1. Reply ONLY with a JSON object — no markdown fences, no extra text.
+  1. Reply ONLY with a JSON object
   2. Use exactly this shape: {"suggested_category": "<category>", "suggested_priority": "<priority>"}
   3. Values must be lowercase and from the lists above.
 """
