@@ -1,9 +1,8 @@
 backend/venv/
 .env
-*.env
 .env.local
+# frontend/.env is intentionally committed — contains only VITE_API_URL, no secrets
 __pycache__
-.gitignore\
 
 # Logs
 logs
