@@ -141,28 +141,13 @@ export default function TicketFormModal({ ticket, initialEditMode = false, onClo
                 {/* Header */}
                 <header className="modal__header">
                     <div className="detail-modal__title-row">
-                        {editing ? (
-                            isNew ? (
-                                <h2>New Support Ticket</h2>
-                            ) : (
-                                <input
-                                    type="text"
-                                    className="detail-modal__title-input"
-                                    value={draft.title}
-                                    onChange={e => setDraft(d => ({ ...d, title: e.target.value }))}
-                                    maxLength={200}
-                                    autoFocus
-                                />
-                            )
-                        ) : (
-                            <h2>{local.title}</h2>
-                        )}
+                        <h2>{editing ? (isNew ? 'New Support Ticket' : 'Edit Ticket') : local.title}</h2>
                     </div>
                     <button className="modal__close" onClick={onClose} aria-label="Close">&#10005;</button>
                 </header>
 
-                {/* Badges (view/edit existing only) */}
-                {!isNew && (
+                {/* Badges (view mode only) */}
+                {!isNew && !editing && (
                     <div className="detail-modal__badges">
                         <span className={`badge ${PRIORITY_BADGE[local.priority] || ''}`}>
                             {PRIORITY_LABEL[local.priority] || local.priority}
@@ -180,22 +165,20 @@ export default function TicketFormModal({ ticket, initialEditMode = false, onClo
                 <div className="detail-modal__body">
                     {editing ? (
                         <>
-                            {/* Title field (create mode — title input is in the form, not the header) */}
-                            {isNew && (
-                                <div className="field">
-                                    <label>
-                                        Title <span className="char-count">({draft.title.length}/200)</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        maxLength={200}
-                                        value={draft.title}
-                                        onChange={e => setDraft(d => ({ ...d, title: e.target.value }))}
-                                        placeholder="Brief summary of the issue"
-                                        autoFocus
-                                    />
-                                </div>
-                            )}
+                            {/* Title field — same layout for both create and edit */}
+                            <div className="field">
+                                <label>
+                                    Title <span className="char-count">({draft.title.length}/200)</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    maxLength={200}
+                                    value={draft.title}
+                                    onChange={e => setDraft(d => ({ ...d, title: e.target.value }))}
+                                    placeholder="Brief summary of the issue"
+                                    autoFocus
+                                />
+                            </div>
 
                             <div className="field">
                                 <label>Description</label>
