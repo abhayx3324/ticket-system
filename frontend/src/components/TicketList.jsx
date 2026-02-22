@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { listTickets } from '../services/api';
 import TicketCard from './TicketCard';
-import TicketDetailModal from './TicketDetailModal';
-import CreateTicketModal from './CreateTicketModal';
+import TicketFormModal from './TicketFormModal';
 
 const CATEGORY_OPTIONS = ['billing', 'technical', 'account', 'general'];
 const PRIORITY_OPTIONS = ['low', 'medium', 'high', 'critical'];
@@ -15,9 +14,10 @@ export default function TicketList({ refreshKey, onTicketCreated }) {
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [modalOpen, setModalOpen] = useState(false);
-    const [detailTicket, setDetailTicket] = useState(null);
-    const [detailEditMode, setDetailEditMode] = useState(false);
+
+    // Modal state: { ticket, editMode } or null
+    const [modal, setModal] = useState(null);
+
     const [filters, setFilters] = useState({ category: '', priority: '', status: '', search: '' });
 
     const fetchTickets = useCallback(async () => {
@@ -39,21 +39,23 @@ export default function TicketList({ refreshKey, onTicketCreated }) {
         setFilters(prev => ({ ...prev, [key]: value }));
     }
 
-    function handleTicketUpdated(updated) {
-        setTickets(prev => prev.map(t => (t.id === updated.id ? updated : t)));
-        setDetailTicket(updated); // keep the modal in sync
-    }
-
-    function handleTicketCreated(ticket) {
-        setTickets(prev => [ticket, ...prev]);
-        onTicketCreated(ticket);
+    function handleSaved(saved) {
+        setTickets(prev => {
+            const exists = prev.find(t => t.id === saved.id);
+            if (exists) return prev.map(t => (t.id === saved.id ? saved : t));
+            return [saved, ...prev];
+        });
+        // Also update the modal's local ticket reference if still open
+        setModal(m => m && m.ticket && m.ticket.id === saved.id ? { ...m, ticket: saved } : m);
+        // Notify parent (for dashboard counters etc.)
+        onTicketCreated(saved);
     }
 
     return (
         <section className="card" aria-labelledby="list-heading">
             <div className="list-header">
                 <h2 id="list-heading">All Tickets</h2>
-                <button className="btn btn--primary" onClick={() => setModalOpen(true)}>
+                <button className="btn btn--primary" onClick={() => setModal({ ticket: null, editMode: true })}>
                     + New Ticket
                 </button>
             </div>
@@ -93,29 +95,19 @@ export default function TicketList({ refreshKey, onTicketCreated }) {
                     <TicketCard
                         key={t.id}
                         ticket={t}
-                        onOpenDetail={(ticket, editMode) => {
-                            setDetailTicket(ticket);
-                            setDetailEditMode(!!editMode);
-                        }}
+                        onOpenDetail={(ticket, editMode) => setModal({ ticket, editMode: !!editMode })}
                     />
                 ))}
             </div>
 
-            {/* Create ticket modal */}
-            {modalOpen && (
-                <CreateTicketModal
-                    onClose={() => setModalOpen(false)}
-                    onTicketCreated={handleTicketCreated}
-                />
-            )}
-
-            {/* Ticket detail / edit modal */}
-            {detailTicket && (
-                <TicketDetailModal
-                    ticket={detailTicket}
-                    initialEditMode={detailEditMode}
-                    onClose={() => { setDetailTicket(null); setDetailEditMode(false); }}
-                    onTicketUpdated={handleTicketUpdated}
+            {/* Unified modal for create AND view/edit */}
+            {modal && (
+                <TicketFormModal
+                    key={modal.ticket?.id || 'new'}
+                    ticket={modal.ticket}
+                    initialEditMode={modal.editMode}
+                    onClose={() => setModal(null)}
+                    onSaved={handleSaved}
                 />
             )}
         </section>
