@@ -41,76 +41,54 @@ body {
 .app-header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 1.5rem 2rem;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 3.5rem;
 }
 
 .app-header__brand {
   display: flex;
-  flex-direction: column;
-  gap: .2rem;
-}
-
-.app-header__subtitle {
-  font-size: .7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  color: var(--text-muted);
+  align-items: center;
 }
 
 .app-header h1 {
-  font-size: 1.4rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--text);
-  letter-spacing: -.025em;
+  letter-spacing: -.01em;
 }
 
-/* ─── Section nav (heading-style) ───────────────────────────── */
-.section-nav {
+/* ─── Header nav buttons ────────────────────────────────────── */
+.header-nav {
   display: flex;
-  gap: 2rem;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 1rem;
+  gap: .5rem;
+  align-items: center;
 }
 
-.section-nav__item {
-  background: none;
-  border: none;
+.header-nav__btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   color: var(--text-muted);
   cursor: pointer;
   font-family: inherit;
-  font-size: 1.4rem;
-  font-weight: 700;
-  letter-spacing: -.025em;
-  padding: 0;
-  line-height: 1.2;
-  position: relative;
-  transition: color .2s;
+  font-size: .85rem;
+  font-weight: 500;
+  padding: .45rem 1rem;
+  transition: color .2s, background .2s, border-color .2s;
 }
 
-.section-nav__item::after {
-  content: '';
-  position: absolute;
-  bottom: -1rem;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--accent);
-  opacity: 0;
-  transition: opacity .2s;
-}
-
-.section-nav__item:hover {
+.header-nav__btn:hover {
   color: var(--text);
+  background: var(--surface-2);
 }
 
-.section-nav__item--active {
+.header-nav__btn--active {
   color: var(--text);
-}
-
-.section-nav__item--active::after {
-  opacity: 1;
+  background: var(--surface-2);
+  border-color: var(--border);
 }
 
 /* ─── Layout ─────────────────────────────────────────────────── */

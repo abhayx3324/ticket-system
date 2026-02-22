@@ -14,16 +14,12 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <div className="app-header__brand">
-          <p className="app-header__subtitle">Internal Tool</p>
           <h1>Support Ticket Management System</h1>
         </div>
-      </header>
-
-      <main className="app-main">
-        <nav className="section-nav" role="tablist">
+        <nav className="header-nav" role="tablist">
           <button
             role="tab"
-            className={`section-nav__item ${activeTab === 'dashboard' ? 'section-nav__item--active' : ''}`}
+            className={`header-nav__btn ${activeTab === 'dashboard' ? 'header-nav__btn--active' : ''}`}
             onClick={() => setActiveTab('dashboard')}
             aria-selected={activeTab === 'dashboard'}
           >
@@ -31,14 +27,15 @@ export default function App() {
           </button>
           <button
             role="tab"
-            className={`section-nav__item ${activeTab === 'tickets' ? 'section-nav__item--active' : ''}`}
+            className={`header-nav__btn ${activeTab === 'tickets' ? 'header-nav__btn--active' : ''}`}
             onClick={() => setActiveTab('tickets')}
             aria-selected={activeTab === 'tickets'}
           >
             Tickets
           </button>
         </nav>
-
+      </header>
+      <main className="app-main">
         {activeTab === 'dashboard' && (
           <StatsDashboard refreshKey={refreshKey} />
         )}
