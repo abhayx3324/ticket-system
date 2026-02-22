@@ -20,13 +20,17 @@ export default function TicketList({ refreshKey, onTicketCreated }) {
 
     const [filters, setFilters] = useState({ category: '', priority: '', status: '', search: '' });
 
-    const fetchTickets = useCallback(async () => {
+    const fetchTickets = useCallback(async (retries = 4) => {
         setLoading(true);
         setError('');
         try {
             const data = await listTickets(filters);
             setTickets(data);
         } catch {
+            if (retries > 0) {
+                await new Promise(r => setTimeout(r, 2000));
+                return fetchTickets(retries - 1);
+            }
             setError('Failed to load tickets. Is the backend running?');
         } finally {
             setLoading(false);

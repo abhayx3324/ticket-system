@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createTicket, updateTicket, deleteTicket } from '../services/api';
 import Spinner from './Spinner';
 import AiClassifyButton from './AiClassifyButton';
+import ConfirmDialog from './ConfirmDialog';
 
 const CATEGORY_OPTIONS = ['billing', 'technical', 'account', 'general'];
 const PRIORITY_OPTIONS = ['low', 'medium', 'high', 'critical'];
@@ -44,6 +45,7 @@ export default function TicketFormModal({ ticket, initialEditMode = false, onClo
     const [saving, setSaving] = useState(false);
     const [advancing, setAdvancing] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
     const [error, setError] = useState('');
 
     // Local copy of the ticket (for view mode updates)
@@ -135,10 +137,6 @@ export default function TicketFormModal({ ticket, initialEditMode = false, onClo
 
     async function handleDelete() {
         if (!local || deleting) return;
-        const confirmed = window.confirm(
-            `Are you sure you want to delete "${local.title}"? This action cannot be undone.`
-        );
-        if (!confirmed) return;
         setDeleting(true);
         setError('');
         try {
@@ -150,6 +148,7 @@ export default function TicketFormModal({ ticket, initialEditMode = false, onClo
             setError(`Delete failed: ${detail}`);
         } finally {
             setDeleting(false);
+            setShowConfirm(false);
         }
     }
 
@@ -264,8 +263,8 @@ export default function TicketFormModal({ ticket, initialEditMode = false, onClo
                         </>
                     ) : (
                         <>
-                            <button className="btn btn--danger" onClick={handleDelete} disabled={deleting}>
-                                {deleting ? <><Spinner size={14} /> Deleting…</> : 'Delete'}
+                            <button className="btn btn--danger" onClick={() => setShowConfirm(true)}>
+                                Delete
                             </button>
                             <div style={{ flex: 1 }} />
                             <button className="btn btn--ghost" onClick={startEdit}>
@@ -283,6 +282,16 @@ export default function TicketFormModal({ ticket, initialEditMode = false, onClo
                         </>
                     )}
                 </div>
+
+                {/* Delete confirmation dialog */}
+                {showConfirm && (
+                    <ConfirmDialog
+                        message={`Are you sure you want to delete "${local.title}"? This action cannot be undone.`}
+                        onConfirm={handleDelete}
+                        onCancel={() => setShowConfirm(false)}
+                        confirming={deleting}
+                    />
+                )}
             </div>
         </div>
     );

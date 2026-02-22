@@ -40,14 +40,19 @@ export default function StatsDashboard({ refreshKey }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    const fetchStats = useCallback(async () => {
+    const fetchStats = useCallback(async (retries = 4) => {
         setLoading(true);
         setError('');
         try {
             const data = await getStats();
             setStats(data);
         } catch {
-            setError('Failed to load stats.');
+            if (retries > 0) {
+                // Backend may still be starting — retry after a short delay
+                await new Promise(r => setTimeout(r, 2000));
+                return fetchStats(retries - 1);
+            }
+            setError('Failed to load stats. Is the backend running?');
         } finally {
             setLoading(false);
         }
