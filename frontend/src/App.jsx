@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import StatsDashboard from './components/StatsDashboard';
-import TicketForm from './components/TicketForm';
 import TicketList from './components/TicketList';
 
 export default function App() {
-  // Incrementing this triggers both TicketList and StatsDashboard to re-fetch
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [refreshKey, setRefreshKey] = useState(0);
 
   function handleTicketCreated() {
@@ -14,14 +13,36 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Support Tickets</h1>
-        <p className="app-header__sub">Submit, track, and manage customer support tickets</p>
+        <div className="app-header__brand">
+          <h1>Support Tickets</h1>
+        </div>
+        <nav className="tab-bar" role="tablist">
+          <button
+            role="tab"
+            className={`tab ${activeTab === 'dashboard' ? 'tab--active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+            aria-selected={activeTab === 'dashboard'}
+          >
+            Dashboard
+          </button>
+          <button
+            role="tab"
+            className={`tab ${activeTab === 'tickets' ? 'tab--active' : ''}`}
+            onClick={() => setActiveTab('tickets')}
+            aria-selected={activeTab === 'tickets'}
+          >
+            Tickets
+          </button>
+        </nav>
       </header>
 
       <main className="app-main">
-        <StatsDashboard refreshKey={refreshKey} />
-        <TicketForm onTicketCreated={handleTicketCreated} />
-        <TicketList refreshKey={refreshKey} />
+        {activeTab === 'dashboard' && (
+          <StatsDashboard refreshKey={refreshKey} />
+        )}
+        {activeTab === 'tickets' && (
+          <TicketList refreshKey={refreshKey} onTicketCreated={handleTicketCreated} />
+        )}
       </main>
     </div>
   );

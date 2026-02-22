@@ -1,22 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import { listTickets } from '../services/api';
 import TicketCard from './TicketCard';
+import CreateTicketModal from './CreateTicketModal';
 
-const CATEGORY_OPTIONS = ['', 'billing', 'technical', 'account', 'general'];
-const PRIORITY_OPTIONS = ['', 'low', 'medium', 'high', 'critical'];
-const STATUS_OPTIONS = ['', 'open', 'in_progress', 'resolved', 'closed'];
+const CATEGORY_OPTIONS = ['billing', 'technical', 'account', 'general'];
+const PRIORITY_OPTIONS = ['low', 'medium', 'high', 'critical'];
+const STATUS_OPTIONS = ['open', 'in_progress', 'resolved', 'closed'];
+const STATUS_LABEL = { open: 'Open', in_progress: 'In Progress', resolved: 'Resolved', closed: 'Closed' };
+const CATEGORY_LABEL = { billing: 'Billing', technical: 'Technical', account: 'Account', general: 'General' };
+const PRIORITY_LABEL = { low: 'Low', medium: 'Medium', high: 'High', critical: 'Critical' };
 
-export default function TicketList({ refreshKey }) {
+export default function TicketList({ refreshKey, onTicketCreated }) {
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-
-    const [filters, setFilters] = useState({
-        category: '',
-        priority: '',
-        status: '',
-        search: '',
-    });
+    const [modalOpen, setModalOpen] = useState(false);
+    const [filters, setFilters] = useState({ category: '', priority: '', status: '', search: '' });
 
     const fetchTickets = useCallback(async () => {
         setLoading(true);
@@ -31,9 +30,7 @@ export default function TicketList({ refreshKey }) {
         }
     }, [filters, refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    useEffect(() => {
-        fetchTickets();
-    }, [fetchTickets]);
+    useEffect(() => { fetchTickets(); }, [fetchTickets]);
 
     function setFilter(key, value) {
         setFilters(prev => ({ ...prev, [key]: value }));
@@ -43,9 +40,19 @@ export default function TicketList({ refreshKey }) {
         setTickets(prev => prev.map(t => (t.id === updated.id ? updated : t)));
     }
 
+    function handleTicketCreated(ticket) {
+        setTickets(prev => [ticket, ...prev]);
+        onTicketCreated(ticket);
+    }
+
     return (
         <section className="card" aria-labelledby="list-heading">
-            <h2 id="list-heading">All Tickets</h2>
+            <div className="list-header">
+                <h2 id="list-heading">All Tickets</h2>
+                <button className="btn btn--primary" onClick={() => setModalOpen(true)}>
+                    + New Ticket
+                </button>
+            </div>
 
             {/* Filter bar */}
             <div className="filter-bar">
@@ -57,42 +64,20 @@ export default function TicketList({ refreshKey }) {
                     className="filter-bar__search"
                     aria-label="Search tickets"
                 />
-
-                <select
-                    value={filters.category}
-                    onChange={e => setFilter('category', e.target.value)}
-                    aria-label="Filter by category"
-                >
+                <select value={filters.category} onChange={e => setFilter('category', e.target.value)} aria-label="Filter by category">
                     <option value="">All categories</option>
-                    {CATEGORY_OPTIONS.filter(Boolean).map(c => (
-                        <option key={c} value={c}>{c}</option>
-                    ))}
+                    {CATEGORY_OPTIONS.map(c => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
                 </select>
-
-                <select
-                    value={filters.priority}
-                    onChange={e => setFilter('priority', e.target.value)}
-                    aria-label="Filter by priority"
-                >
+                <select value={filters.priority} onChange={e => setFilter('priority', e.target.value)} aria-label="Filter by priority">
                     <option value="">All priorities</option>
-                    {PRIORITY_OPTIONS.filter(Boolean).map(p => (
-                        <option key={p} value={p}>{p}</option>
-                    ))}
+                    {PRIORITY_OPTIONS.map(p => <option key={p} value={p}>{PRIORITY_LABEL[p]}</option>)}
                 </select>
-
-                <select
-                    value={filters.status}
-                    onChange={e => setFilter('status', e.target.value)}
-                    aria-label="Filter by status"
-                >
+                <select value={filters.status} onChange={e => setFilter('status', e.target.value)} aria-label="Filter by status">
                     <option value="">All statuses</option>
-                    {STATUS_OPTIONS.filter(Boolean).map(s => (
-                        <option key={s} value={s}>{s.replace('_', ' ')}</option>
-                    ))}
+                    {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
                 </select>
             </div>
 
-            {/* Results */}
             {loading && <p className="hint">Loading tickets…</p>}
             {error && <p className="msg msg--error">{error}</p>}
             {!loading && !error && tickets.length === 0 && (
@@ -101,13 +86,16 @@ export default function TicketList({ refreshKey }) {
 
             <div className="ticket-list">
                 {tickets.map(t => (
-                    <TicketCard
-                        key={t.id}
-                        ticket={t}
-                        onStatusChange={handleStatusChange}
-                    />
+                    <TicketCard key={t.id} ticket={t} onStatusChange={handleStatusChange} />
                 ))}
             </div>
+
+            {modalOpen && (
+                <CreateTicketModal
+                    onClose={() => setModalOpen(false)}
+                    onTicketCreated={handleTicketCreated}
+                />
+            )}
         </section>
     );
 }

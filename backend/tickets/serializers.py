@@ -30,4 +30,27 @@ class TicketSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 f"Invalid status. Must be one of: {', '.join(valid)}"
             )
+
+        # On update (PATCH/PUT): enforce staged transitions
+        if self.instance:
+            NEXT_STATUS = {
+                'open':        'in_progress',
+                'in_progress': 'resolved',
+                'resolved':    'closed',
+                'closed':      None,
+            }
+            current = self.instance.status
+            allowed_next = NEXT_STATUS.get(current)
+
+            if value != current:
+                if current == 'closed':
+                    raise serializers.ValidationError(
+                        "This ticket is closed and cannot be updated."
+                    )
+                if value != allowed_next:
+                    raise serializers.ValidationError(
+                        f"Status can only advance from '{current}' to '{allowed_next}'. "
+                        f"Cannot jump directly to '{value}'."
+                    )
+
         return value

@@ -8,7 +8,7 @@ from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from .models import Ticket
 from .serializers import TicketSerializer
-from .utils import classify_ticket
+from .utils import classify_ticket, LLMConfigError, LLMResponseError, LLMError
 
 
 class TicketViewSet(viewsets.ModelViewSet):
@@ -95,30 +95,48 @@ class TicketStatsView(APIView):
 class ClassifyTicketView(APIView):
     def post(self, request):
         description = request.data.get('description', '').strip()
+        title = request.data.get('title', '').strip()
+
         if not description:
             return Response(
                 {"error": "A non-empty 'description' field is required."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        suggestion = classify_ticket(description)
-
-        if not suggestion:
-            return Response({
-                "suggested_category": "",
-                "suggested_priority": "",
-            })
+        try:
+            suggestion = classify_ticket(title=title, description=description)
+        except LLMConfigError as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except LLMResponseError as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        except LLMError as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
 
         valid_categories = [c[0] for c in Ticket.CATEGORY_CHOICES]
-        valid_priorities = [p[0] for p in Ticket.PRIORITY_CHOICES]
+        valid_priorities  = [p[0] for p in Ticket.PRIORITY_CHOICES]
 
         suggested_category = suggestion.get('suggested_category', '')
         suggested_priority = suggestion.get('suggested_priority', '')
 
         if suggested_category not in valid_categories:
-            suggested_category = ''
+            return Response(
+                {"error": f"LLM returned an unrecognised category: '{suggested_category}'."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
         if suggested_priority not in valid_priorities:
-            suggested_priority = ''
+            return Response(
+                {"error": f"LLM returned an unrecognised priority: '{suggested_priority}'."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
 
         return Response({
             "suggested_category": suggested_category,
