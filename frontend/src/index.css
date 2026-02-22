@@ -41,56 +41,76 @@ body {
 .app-header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 0 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  padding: 1.5rem 2rem;
 }
 
 .app-header__brand {
   display: flex;
-  align-items: center;
-  gap: .6rem;
-  padding: 1rem 0;
+  flex-direction: column;
+  gap: .2rem;
+}
+
+.app-header__subtitle {
+  font-size: .7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--text-muted);
 }
 
 .app-header h1 {
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   font-weight: 700;
   color: var(--text);
-  letter-spacing: -.01em;
+  letter-spacing: -.025em;
 }
 
-/* ─── Tab bar ────────────────────────────────────────────────── */
-.tab-bar {
+/* ─── Section nav (heading-style) ───────────────────────────── */
+.section-nav {
   display: flex;
-  height: 100%;
-  align-items: stretch;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1rem;
 }
 
-.tab {
+.section-nav__item {
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
   color: var(--text-muted);
   cursor: pointer;
   font-family: inherit;
-  font-size: .9rem;
-  font-weight: 500;
-  padding: 1.1rem 1.4rem;
-  transition: color .2s, border-color .2s;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -.025em;
+  padding: 0;
+  line-height: 1.2;
+  position: relative;
+  transition: color .2s;
 }
 
-.tab:hover {
+.section-nav__item::after {
+  content: '';
+  position: absolute;
+  bottom: -1rem;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity .2s;
+}
+
+.section-nav__item:hover {
   color: var(--text);
 }
 
-.tab--active {
+.section-nav__item--active {
   color: var(--text);
-  border-bottom-color: var(--accent);
+}
+
+.section-nav__item--active::after {
+  opacity: 1;
 }
 
 /* ─── Layout ─────────────────────────────────────────────────── */
@@ -494,6 +514,7 @@ select option {
 
 /* ─── Ticket card ────────────────────────────────────────────── */
 .ticket-card {
+  position: relative;
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -553,30 +574,104 @@ select option {
   color: var(--text-muted);
 }
 
-.ticket-card__closed {
-  font-size: .75rem;
+/* Edit icon — appears on hover (top-right) */
+.ticket-card__edit-btn {
+  position: absolute;
+  top: .75rem;
+  right: .75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: .35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity .15s, color .15s, border-color .15s;
+}
+
+.ticket-card:hover .ticket-card__edit-btn {
+  opacity: 1;
+}
+
+.ticket-card__edit-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ─── Detail modal ───────────────────────────────────────────── */
+.detail-modal {
+  max-width: 620px;
+}
+
+.detail-modal__title-row {
+  flex: 1;
+  min-width: 0;
+}
+
+.detail-modal__title-row h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.detail-modal__title-input {
+  width: 100%;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: .5rem .75rem;
+  font-family: inherit;
+}
+
+.detail-modal__title-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(77, 127, 255, .15);
+}
+
+.detail-modal__badges {
+  display: flex;
+  gap: .4rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.detail-modal__body {
+  margin-bottom: 1rem;
+}
+
+.detail-modal__desc {
+  font-size: .92rem;
+  color: var(--text);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  margin-bottom: 1rem;
+}
+
+.detail-modal__meta {
+  font-size: .78rem;
+  color: var(--text-muted);
+}
+
+.detail-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.detail-modal__closed-label {
+  font-size: .85rem;
   color: var(--text-muted);
   font-style: italic;
-}
-
-.ticket-card__actions {
-  display: flex;
-  gap: .5rem;
-  align-items: center;
-}
-
-/* Edit desc */
-.edit-desc {
-  margin: .5rem 0 .75rem;
-}
-
-.edit-desc textarea {
-  margin-bottom: .5rem;
-}
-
-.edit-desc__actions {
-  display: flex;
-  gap: .5rem;
 }
 
 /* ─── Badges ─────────────────────────────────────────────────── */

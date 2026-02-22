@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { listTickets } from '../services/api';
 import TicketCard from './TicketCard';
+import TicketDetailModal from './TicketDetailModal';
 import CreateTicketModal from './CreateTicketModal';
 
 const CATEGORY_OPTIONS = ['billing', 'technical', 'account', 'general'];
@@ -15,6 +16,7 @@ export default function TicketList({ refreshKey, onTicketCreated }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [modalOpen, setModalOpen] = useState(false);
+    const [detailTicket, setDetailTicket] = useState(null);
     const [filters, setFilters] = useState({ category: '', priority: '', status: '', search: '' });
 
     const fetchTickets = useCallback(async () => {
@@ -36,8 +38,9 @@ export default function TicketList({ refreshKey, onTicketCreated }) {
         setFilters(prev => ({ ...prev, [key]: value }));
     }
 
-    function handleStatusChange(updated) {
+    function handleTicketUpdated(updated) {
         setTickets(prev => prev.map(t => (t.id === updated.id ? updated : t)));
+        setDetailTicket(updated); // keep the modal in sync
     }
 
     function handleTicketCreated(ticket) {
@@ -86,14 +89,28 @@ export default function TicketList({ refreshKey, onTicketCreated }) {
 
             <div className="ticket-list">
                 {tickets.map(t => (
-                    <TicketCard key={t.id} ticket={t} onStatusChange={handleStatusChange} />
+                    <TicketCard
+                        key={t.id}
+                        ticket={t}
+                        onOpenDetail={setDetailTicket}
+                    />
                 ))}
             </div>
 
+            {/* Create ticket modal */}
             {modalOpen && (
                 <CreateTicketModal
                     onClose={() => setModalOpen(false)}
                     onTicketCreated={handleTicketCreated}
+                />
+            )}
+
+            {/* Ticket detail / edit modal */}
+            {detailTicket && (
+                <TicketDetailModal
+                    ticket={detailTicket}
+                    onClose={() => setDetailTicket(null)}
+                    onTicketUpdated={handleTicketUpdated}
                 />
             )}
         </section>
