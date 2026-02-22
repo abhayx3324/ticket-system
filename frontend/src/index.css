@@ -302,6 +302,15 @@ select option {
   background: var(--accent-hover);
 }
 
+.btn--danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
 .btn--ghost {
   background: transparent;
   color: var(--text-muted);

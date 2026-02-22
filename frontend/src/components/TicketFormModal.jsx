@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createTicket, updateTicket } from '../services/api';
+import { createTicket, updateTicket, deleteTicket } from '../services/api';
 import Spinner from './Spinner';
 import AiClassifyButton from './AiClassifyButton';
 
@@ -36,13 +36,14 @@ function formatDate(iso) {
  *   onClose        — called to close the modal
  *   onSaved        — called with the saved/created ticket object
  */
-export default function TicketFormModal({ ticket, initialEditMode = false, onClose, onSaved }) {
+export default function TicketFormModal({ ticket, initialEditMode = false, onClose, onSaved, onDeleted }) {
     const isNew = !ticket;
 
     // In create mode we're always editing; in view mode we start in view unless initialEditMode
     const [editing, setEditing] = useState(isNew || initialEditMode);
     const [saving, setSaving] = useState(false);
     const [advancing, setAdvancing] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     const [error, setError] = useState('');
 
     // Local copy of the ticket (for view mode updates)
@@ -130,6 +131,26 @@ export default function TicketFormModal({ ticket, initialEditMode = false, onClo
             ...(category ? { category } : {}),
             ...(priority ? { priority } : {}),
         }));
+    }
+
+    async function handleDelete() {
+        if (!local || deleting) return;
+        const confirmed = window.confirm(
+            `Are you sure you want to delete "${local.title}"? This action cannot be undone.`
+        );
+        if (!confirmed) return;
+        setDeleting(true);
+        setError('');
+        try {
+            await deleteTicket(local.id);
+            onDeleted(local.id);
+            onClose();
+        } catch (err) {
+            const detail = err.data ? JSON.stringify(err.data) : err.message;
+            setError(`Delete failed: ${detail}`);
+        } finally {
+            setDeleting(false);
+        }
     }
 
     const nextLabel = local ? NEXT_LABEL[local.status] : null;
@@ -243,6 +264,10 @@ export default function TicketFormModal({ ticket, initialEditMode = false, onClo
                         </>
                     ) : (
                         <>
+                            <button className="btn btn--danger" onClick={handleDelete} disabled={deleting}>
+                                {deleting ? <><Spinner size={14} /> Deleting…</> : 'Delete'}
+                            </button>
+                            <div style={{ flex: 1 }} />
                             <button className="btn btn--ghost" onClick={startEdit}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                                 Edit

@@ -51,6 +51,12 @@ export default function TicketList({ refreshKey, onTicketCreated }) {
         onTicketCreated(saved);
     }
 
+    function handleDeleted(id) {
+        setTickets(prev => prev.filter(t => t.id !== id));
+        setModal(null);
+        onTicketCreated(); // refresh dashboard counts
+    }
+
     return (
         <section className="card" aria-labelledby="list-heading">
             <div className="list-header">
@@ -108,6 +114,7 @@ export default function TicketList({ refreshKey, onTicketCreated }) {
                     initialEditMode={modal.editMode}
                     onClose={() => setModal(null)}
                     onSaved={handleSaved}
+                    onDeleted={handleDeleted}
                 />
             )}
         </section>

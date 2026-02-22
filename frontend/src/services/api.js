@@ -35,6 +35,10 @@ export function updateTicket(id, data) {
     return request(`/tickets/${id}/`, { method: 'PATCH', body: JSON.stringify(data) });
 }
 
+export function deleteTicket(id) {
+    return request(`/tickets/${id}/`, { method: 'DELETE' });
+}
+
 export function classifyTicket(title, description) {
     return request('/tickets/classify/', { method: 'POST', body: JSON.stringify({ title, description }) });
 }
