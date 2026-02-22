@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { createTicket, classifyTicket } from '../services/api';
+import { createTicket } from '../services/api';
 import Spinner from './Spinner';
+import AiClassifyButton from './AiClassifyButton';
 
 const CATEGORY_OPTIONS = ['billing', 'technical', 'account', 'general'];
 const PRIORITY_OPTIONS = ['low', 'medium', 'high', 'critical'];
@@ -13,9 +14,6 @@ export default function CreateTicketModal({ onClose, onTicketCreated }) {
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState('');
     const [priority, setPriority] = useState('');
-    const [classifying, setClassifying] = useState(false);
-    const [suggestion, setSuggestion] = useState(null);   // { suggested_category, suggested_priority }
-    const [classifyError, setClassifyError] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
 
@@ -25,31 +23,6 @@ export default function CreateTicketModal({ onClose, onTicketCreated }) {
         document.addEventListener('keydown', onKey);
         return () => document.removeEventListener('keydown', onKey);
     });
-
-    async function handleClassify() {
-        if (!description.trim()) return;
-        setClassifying(true);
-        setSuggestion(null);
-        setClassifyError('');
-        try {
-            const result = await classifyTicket(title, description);
-            if (result.suggested_category || result.suggested_priority) {
-                setSuggestion(result);
-                if (result.suggested_category) setCategory(result.suggested_category);
-                if (result.suggested_priority) setPriority(result.suggested_priority);
-            } else {
-                setClassifyError('AI returned no suggestion. Try a more detailed description.');
-            }
-        } catch (err) {
-            if (err.status === 503) {
-                setClassifyError('AI classification unavailable — LLM_API_KEY is not configured.');
-            } else {
-                setClassifyError('Classification failed. You can still set category and priority manually.');
-            }
-        } finally {
-            setClassifying(false);
-        }
-    }
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -75,7 +48,10 @@ export default function CreateTicketModal({ onClose, onTicketCreated }) {
         if (e.target === e.currentTarget) onClose();
     }
 
-    const canClassify = description.trim().length > 10 && !classifying;
+    function handleAiApply({ category: cat, priority: pri }) {
+        if (cat) setCategory(cat);
+        if (pri) setPriority(pri);
+    }
 
     return (
         <div className="modal-overlay" onClick={handleOverlayClick} role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -109,56 +85,17 @@ export default function CreateTicketModal({ onClose, onTicketCreated }) {
                             required
                             rows={4}
                             value={description}
-                            onChange={e => { setDescription(e.target.value); setSuggestion(null); setClassifyError(''); }}
+                            onChange={e => setDescription(e.target.value)}
                             placeholder="Describe your issue in detail..."
                         />
                     </div>
 
-                    {/* AI classify button */}
-                    <div className="classify-row">
-                        <button
-                            type="button"
-                            className="btn btn--classify"
-                            onClick={handleClassify}
-                            disabled={!canClassify}
-                        >
-                            {classifying
-                                ? <><Spinner size={13} /> Analysing…</>
-                                : 'Analyse with AI'}
-                        </button>
-                        <span className="classify-row__hint">
-                            Auto-fills category and priority using AI
-                        </span>
-                    </div>
-
-                    {/* AI error */}
-                    {classifyError && !classifying && (
-                        <p className="msg msg--error" role="alert">{classifyError}</p>
-                    )}
-
-                    {/* AI Suggestion callout */}
-                    {suggestion && !classifying && (
-                        <div className="ai-callout">
-                            <span className="ai-callout__label">AI Suggested</span>
-                            <div className="ai-callout__body">
-                                <p className="ai-callout__detail">
-                                    Category: <strong>{CATEGORY_LABEL[suggestion.suggested_category] || suggestion.suggested_category}</strong>
-                                    &nbsp;&middot;&nbsp;
-                                    Priority: <strong>{PRIORITY_LABEL[suggestion.suggested_priority] || suggestion.suggested_priority}</strong>
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                className="ai-callout__accept"
-                                onClick={() => {
-                                    setCategory(suggestion.suggested_category);
-                                    setPriority(suggestion.suggested_priority);
-                                }}
-                            >
-                                Re-apply
-                            </button>
-                        </div>
-                    )}
+                    {/* Shared AI classify component */}
+                    <AiClassifyButton
+                        title={title}
+                        description={description}
+                        onApply={handleAiApply}
+                    />
 
                     <div className="field-row">
                         <div className="field">
@@ -185,7 +122,7 @@ export default function CreateTicketModal({ onClose, onTicketCreated }) {
 
                     <div className="modal__actions">
                         <button type="button" className="btn btn--ghost" onClick={onClose}>Cancel</button>
-                        <button type="submit" className="btn btn--primary" disabled={submitting || classifying}>
+                        <button type="submit" className="btn btn--primary" disabled={submitting}>
                             {submitting ? <><Spinner size={14} /> Submitting…</> : 'Submit Ticket'}
                         </button>
                     </div>

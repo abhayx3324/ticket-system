@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { updateTicket } from '../services/api';
 import Spinner from './Spinner';
+import AiClassifyButton from './AiClassifyButton';
 
 const CATEGORY_OPTIONS = ['billing', 'technical', 'account', 'general'];
 const PRIORITY_OPTIONS = ['low', 'medium', 'high', 'critical'];
@@ -40,8 +41,8 @@ function formatDate(iso) {
     return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-export default function TicketDetailModal({ ticket, onClose, onTicketUpdated }) {
-    const [editing, setEditing] = useState(false);
+export default function TicketDetailModal({ ticket, onClose, onTicketUpdated, initialEditMode = false }) {
+    const [editing, setEditing] = useState(initialEditMode);
     const [saving, setSaving] = useState(false);
     const [advancing, setAdvancing] = useState(false);
     const [error, setError] = useState('');
@@ -163,6 +164,17 @@ export default function TicketDetailModal({ ticket, onClose, onTicketUpdated }) 
                                     onChange={e => setDraft(d => ({ ...d, description: e.target.value }))}
                                 />
                             </div>
+                            <AiClassifyButton
+                                title={draft.title}
+                                description={draft.description}
+                                onApply={({ category, priority }) => {
+                                    setDraft(d => ({
+                                        ...d,
+                                        ...(category ? { category } : {}),
+                                        ...(priority ? { priority } : {}),
+                                    }));
+                                }}
+                            />
                             <div className="field-row">
                                 <div className="field">
                                     <label>Category</label>

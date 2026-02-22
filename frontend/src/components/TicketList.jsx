@@ -17,6 +17,7 @@ export default function TicketList({ refreshKey, onTicketCreated }) {
     const [error, setError] = useState('');
     const [modalOpen, setModalOpen] = useState(false);
     const [detailTicket, setDetailTicket] = useState(null);
+    const [detailEditMode, setDetailEditMode] = useState(false);
     const [filters, setFilters] = useState({ category: '', priority: '', status: '', search: '' });
 
     const fetchTickets = useCallback(async () => {
@@ -92,7 +93,10 @@ export default function TicketList({ refreshKey, onTicketCreated }) {
                     <TicketCard
                         key={t.id}
                         ticket={t}
-                        onOpenDetail={setDetailTicket}
+                        onOpenDetail={(ticket, editMode) => {
+                            setDetailTicket(ticket);
+                            setDetailEditMode(!!editMode);
+                        }}
                     />
                 ))}
             </div>
@@ -109,7 +113,8 @@ export default function TicketList({ refreshKey, onTicketCreated }) {
             {detailTicket && (
                 <TicketDetailModal
                     ticket={detailTicket}
-                    onClose={() => setDetailTicket(null)}
+                    initialEditMode={detailEditMode}
+                    onClose={() => { setDetailTicket(null); setDetailEditMode(false); }}
                     onTicketUpdated={handleTicketUpdated}
                 />
             )}

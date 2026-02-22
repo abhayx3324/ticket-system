@@ -577,14 +577,14 @@ select option {
 /* Edit icon — appears on hover (top-right) */
 .ticket-card__edit-btn {
   position: absolute;
-  top: .75rem;
+  bottom: .75rem;
   right: .75rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   cursor: pointer;
-  padding: .35rem;
+  padding: .5rem;
   display: flex;
   align-items: center;
   justify-content: center;
