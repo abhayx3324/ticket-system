@@ -102,7 +102,7 @@ def classify_ticket(title: str, description: str) -> dict:
             "AI classification is unavailable."
         )
 
-    model_name = os.environ.get("LLM_MODEL", "gemini-3.5-flash")
+    model_name = os.environ.get("LLM_MODEL", "gemini-2.5-flash-lite")
     if not model_name:
         raise LLMConfigError(
             "LLM_MODEL environment variable is not set. "
