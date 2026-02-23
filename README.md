@@ -2,6 +2,8 @@
 
 A full-stack support ticket system with AI-powered triage, built with Django, React, PostgreSQL, and Google Gemini.
 
+**GitHub Repository:** [https://github.com/abhayx3324/ticket-system](https://github.com/abhayx3324/ticket-system)
+
 ## Quick Start
 
 ```bash
